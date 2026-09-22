@@ -7,11 +7,12 @@ plugins {
 }
 
 // Release signing: reads a properties file kept OUTSIDE the repo
-// (storeFile / storePassword / keyAlias / keyPassword). Override the path with
-// the JEV_KEYSTORE_PROPS env var. Without it, release builds are unsigned.
+// (storeFile / storePassword / keyAlias / keyPassword). Point JEV_KEYSTORE_PROPS
+// at it. Unset (CI, other machines) means release builds are simply unsigned.
 val releaseProps = Properties().apply {
-    val f = file(System.getenv("JEV_KEYSTORE_PROPS") ?: "H:/android/keys/jev-release.properties")
-    if (f.exists()) FileInputStream(f).use { load(it) }
+    val path = System.getenv("JEV_KEYSTORE_PROPS")
+    val f = if (path.isNullOrBlank()) null else file(path)
+    if (f != null && f.exists()) FileInputStream(f).use { load(it) }
 }
 
 android {
