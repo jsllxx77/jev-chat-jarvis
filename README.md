@@ -109,6 +109,7 @@ adb install -r apk/jev-assistant-v1.3-release.apk
 
 - 判断 / 回复 / 视觉三路的地址、密钥、模型分别可填。
 - 内置 classifier.dev (免Key公共节点)、OpenRouter、TypeSafe 直连、DeepSeek 官方、通义兼容等预设，每张卡一键连通测试。
+- **classifier.dev 免费额度**：按出口 IP 计数（约 3,000 次/分钟、20,000 次/天），无需注册。若系统判定当前出口 IP 属于匿名代理/机房网络，会返回 `403 proxy_requires_payment`，此时需填入已充值工作区的密钥，或改用 OpenRouter / TypeSafe 直连。
 - 只有一把密钥也能用：回复、视觉留空自动继承判断接口的配置。
 - 从旧版本升级时，原来那把密钥会一次性迁移到新的三卡结构。
 
