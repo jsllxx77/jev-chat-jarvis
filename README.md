@@ -75,7 +75,9 @@
 adb install -r apk/jev-assistant-v1.3-release.apk
 ```
 
-**2. 填密钥。** 打开 App → 设置 →「接口」分三张卡：判断接口 / 回复接口 / 视觉接口。最简单只填「判断接口」一栏的 [OpenRouter](https://openrouter.ai/) API Key，其余两栏留空会自动继承这把密钥就能用。想换回复模型（默认 `deepseek/deepseek-chat-v3.1`，国内 Gemini / OpenAI 会被区域限制）就在「回复接口」选预设（OpenRouter / DeepSeek 官方 / 通义兼容）或自填地址，每张卡都有独立的一键连通测试。
+**2. 填密钥。** 打开 App → 设置 →「接口」分三张卡：判断接口 / 回复接口 / 视觉接口。
+- **判断接口（Jev）**：已内置 **classifier.dev（免Key公共节点）** 预设，开箱即用，无需配置或购买 OpenRouter 额度；也可随时切换 OpenRouter 或 TypeSafe 直连。
+- **回复接口**：选预设（DeepSeek 官方 / 通义兼容 / OpenRouter）或自填任意 OpenAI 兼容地址并填入对应 API Key。每张卡都有独立的一键连通测试。
 
 **3. 开权限。** 按主页向导开三项：
 
@@ -106,7 +108,7 @@ adb install -r apk/jev-assistant-v1.3-release.apk
 ### 接口与模型
 
 - 判断 / 回复 / 视觉三路的地址、密钥、模型分别可填。
-- 内置 OpenRouter、TypeSafe 直连、DeepSeek 官方、通义兼容四套预设，每张卡一键连通测试。
+- 内置 classifier.dev (免Key公共节点)、OpenRouter、TypeSafe 直连、DeepSeek 官方、通义兼容等预设，每张卡一键连通测试。
 - 只有一把密钥也能用：回复、视觉留空自动继承判断接口的配置。
 - 从旧版本升级时，原来那把密钥会一次性迁移到新的三卡结构。
 

@@ -42,14 +42,14 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
 
     // ---------------------------------------------------------------- judge
 
-    /** "openrouter" | "typesafe" | "custom". */
+    /** "classifier" | "openrouter" | "typesafe" | "custom". */
     var judgeProvider: String
-        get() = sp.getString(K_JUDGE_PROVIDER, PROVIDER_OPENROUTER) ?: PROVIDER_OPENROUTER
+        get() = sp.getString(K_JUDGE_PROVIDER, PROVIDER_CLASSIFIER) ?: PROVIDER_CLASSIFIER
         set(v) = sp.edit().putString(K_JUDGE_PROVIDER, v.trim()).apply()
 
     /** Host root; the path is appended per provider (see [judgeEndpoint]). */
     var judgeBaseUrl: String
-        get() = sp.getString(K_JUDGE_BASE, DEFAULT_JUDGE_BASE_OPENROUTER) ?: DEFAULT_JUDGE_BASE_OPENROUTER
+        get() = sp.getString(K_JUDGE_BASE, DEFAULT_JUDGE_BASE_CLASSIFIER) ?: DEFAULT_JUDGE_BASE_CLASSIFIER
         set(v) = sp.edit().putString(K_JUDGE_BASE, v.trim()).apply()
 
     var judgeKey: String
@@ -57,7 +57,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         set(v) = sp.edit().putString(K_JUDGE_KEY, v.trim()).apply()
 
     var judgeModel: String
-        get() = sp.getString(K_JUDGE_MODEL, DEFAULT_JUDGE_MODEL_OPENROUTER) ?: DEFAULT_JUDGE_MODEL_OPENROUTER
+        get() = sp.getString(K_JUDGE_MODEL, DEFAULT_JUDGE_MODEL_CLASSIFIER) ?: DEFAULT_JUDGE_MODEL_CLASSIFIER
         set(v) = sp.edit().putString(K_JUDGE_MODEL, v.trim()).apply()
 
     /** Back-compat alias so older call sites keep compiling. */
@@ -187,8 +187,18 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
 
     // ------------------------------------------------------------- helpers
 
+    /** Judge route key; defaults to "free" for classifier.dev if left blank. */
+    fun effectiveJudgeKey(): String {
+        val k = judgeKey.trim()
+        if (k.isNotEmpty()) return k
+        if (judgeProvider == PROVIDER_CLASSIFIER) return "free"
+        return ""
+    }
+
     /** Reply route key, falling back to the judge key. */
-    fun effectiveReplyKey(): String = replyKey.ifBlank { judgeKey }
+    fun effectiveReplyKey(): String = replyKey.ifBlank {
+        if (judgeProvider != PROVIDER_CLASSIFIER) judgeKey else ""
+    }
 
     /** Vision route key, falling back to reply then judge. */
     fun effectiveVisionKey(): String = visionKey.ifBlank { effectiveReplyKey() }
@@ -197,6 +207,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     fun judgeEndpoint(): String {
         val base = judgeBaseUrl.trim().trimEnd('/')
         return when (judgeProvider) {
+            PROVIDER_CLASSIFIER -> "$base/v1/systemone"
             PROVIDER_TYPESAFE -> "$base/v1/systemone"
             PROVIDER_CUSTOM -> judgeBaseUrl.trim()   // user supplies the full URL
             else -> "$base/alpha/decisions"
@@ -220,7 +231,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     }
 
     /** Readiness gate: the judge route is the one that must be configured. */
-    fun hasKey(): Boolean = judgeKey.isNotBlank()
+    fun hasKey(): Boolean = judgeKey.isNotBlank() || judgeProvider == PROVIDER_CLASSIFIER
 
     companion object {
         private const val TAG = "JEVASSIST"
@@ -255,6 +266,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         private const val K_BUBBLE_X = "bubble_x"
         private const val K_AUTO = "auto_analyze"
 
+        const val PROVIDER_CLASSIFIER = "classifier"
         const val PROVIDER_OPENROUTER = "openrouter"
         const val PROVIDER_TYPESAFE = "typesafe"
         const val PROVIDER_CUSTOM = "custom"
@@ -263,6 +275,8 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
         const val OCR_VISION = "vision"
 
         // Judge route presets.
+        const val DEFAULT_JUDGE_BASE_CLASSIFIER = "https://classifier.dev"
+        const val DEFAULT_JUDGE_MODEL_CLASSIFIER = "jev-latest"
         const val DEFAULT_JUDGE_BASE_OPENROUTER = "https://openrouter.ai/api"
         const val DEFAULT_JUDGE_MODEL_OPENROUTER = "typesafe/jev-1.13"
         const val DEFAULT_JUDGE_BASE_TYPESAFE = "https://api.typesafe.ai"

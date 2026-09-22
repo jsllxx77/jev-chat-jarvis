@@ -74,37 +74,43 @@ class SettingsActivity : AppCompatActivity() {
         judgeCard.addView(cardTitle("判断接口（Jev）"))
         judgeCard.addView(text("读对方消息、给意图判断和候选排序。必须配置。", 12f, sub))
 
-        val judgeBaseEdit = edit(prefs.judgeBaseUrl, Prefs.DEFAULT_JUDGE_BASE_OPENROUTER)
-        val judgeModelEdit = edit(prefs.judgeModel, Prefs.DEFAULT_JUDGE_MODEL_OPENROUTER)
+        val judgeBaseEdit = edit(prefs.judgeBaseUrl, Prefs.DEFAULT_JUDGE_BASE_CLASSIFIER)
+        val judgeModelEdit = edit(prefs.judgeModel, Prefs.DEFAULT_JUDGE_MODEL_CLASSIFIER)
         judgeProviderIdx = when (prefs.judgeProvider) {
-            Prefs.PROVIDER_TYPESAFE -> 1
-            Prefs.PROVIDER_CUSTOM -> 2
+            Prefs.PROVIDER_CLASSIFIER -> 0
+            Prefs.PROVIDER_OPENROUTER -> 1
+            Prefs.PROVIDER_TYPESAFE -> 2
+            Prefs.PROVIDER_CUSTOM -> 3
             else -> 0
         }
         judgeCard.addView(pills(
-            listOf("OpenRouter", "TypeSafe 直连", "自定义"), judgeProviderIdx) { idx ->
+            listOf("classifier.dev (免Key)", "OpenRouter", "TypeSafe 直连", "自定义"), judgeProviderIdx) { idx ->
             judgeProviderIdx = idx
             when (idx) {
                 0 -> {
+                    judgeBaseEdit.setText(Prefs.DEFAULT_JUDGE_BASE_CLASSIFIER)
+                    judgeModelEdit.setText(Prefs.DEFAULT_JUDGE_MODEL_CLASSIFIER)
+                }
+                1 -> {
                     judgeBaseEdit.setText(Prefs.DEFAULT_JUDGE_BASE_OPENROUTER)
                     judgeModelEdit.setText(Prefs.DEFAULT_JUDGE_MODEL_OPENROUTER)
                 }
-                1 -> {
+                2 -> {
                     judgeBaseEdit.setText(Prefs.DEFAULT_JUDGE_BASE_TYPESAFE)
                     judgeModelEdit.setText(Prefs.DEFAULT_JUDGE_MODEL_TYPESAFE)
                 }
                 // Custom POSTs the box verbatim, so a preset HOST left in the box
                 // would hit the API root. Expand it into the full endpoint the
                 // preset would have used; anything hand-typed is left alone.
-                2 -> judgeBaseEdit.setText(expandJudgeUrl(judgeBaseEdit.text.toString()))
+                3 -> judgeBaseEdit.setText(expandJudgeUrl(judgeBaseEdit.text.toString()))
             }
         })
         judgeCard.addView(label("Base URL"))
         judgeCard.addView(judgeBaseEdit)
-        judgeCard.addView(text("OpenRouter 拼 /alpha/decisions；TypeSafe 拼 /v1/systemone；自定义按原样 POST。",
+        judgeCard.addView(text("classifier.dev 与 TypeSafe 拼 /v1/systemone；OpenRouter 拼 /alpha/decisions；自定义按原样 POST。",
             11f, sub))
         judgeCard.addView(label("密钥"))
-        judgeCard.addView(edit(prefs.judgeKey, "sk-...", password = true).also { judgeKeyEdit = it })
+        judgeCard.addView(edit(prefs.judgeKey, "留空即可（免Key）或填入自定义密钥", password = true).also { judgeKeyEdit = it })
         judgeCard.addView(label("模型"))
         judgeCard.addView(judgeModelEdit)
         val judgeResult = resultText()
@@ -112,7 +118,10 @@ class SettingsActivity : AppCompatActivity() {
             val base = judgeBaseEdit.text.toString().trim()
             val key = judgeKeyEdit.text.toString().trim()
             val model = judgeModelEdit.text.toString().trim()
-            if (key.isBlank()) { judgeResult.text = "请先填密钥"; return@cardBtn }
+            val provider = resolveJudgeProvider(judgeProviderIdx, base)
+            if (key.isBlank() && provider != Prefs.PROVIDER_CLASSIFIER) {
+                judgeResult.text = "请先填密钥"; return@cardBtn
+            }
             judgeResult.text = "测试中…"
             // Provider follows the address when it is still a known preset host,
             // so a stale pill selection cannot send a TypeSafe path to OpenRouter.
@@ -395,9 +404,11 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var visionKeyEdit: EditText
 
     private fun providerOf(idx: Int) = when (idx) {
-        1 -> Prefs.PROVIDER_TYPESAFE
-        2 -> Prefs.PROVIDER_CUSTOM
-        else -> Prefs.PROVIDER_OPENROUTER
+        0 -> Prefs.PROVIDER_CLASSIFIER
+        1 -> Prefs.PROVIDER_OPENROUTER
+        2 -> Prefs.PROVIDER_TYPESAFE
+        3 -> Prefs.PROVIDER_CUSTOM
+        else -> Prefs.PROVIDER_CLASSIFIER
     }
 
     /**
@@ -408,6 +419,7 @@ class SettingsActivity : AppCompatActivity() {
      */
     private fun resolveJudgeProvider(idx: Int, base: String): String =
         when (base.trim().trimEnd('/')) {
+            Prefs.DEFAULT_JUDGE_BASE_CLASSIFIER -> Prefs.PROVIDER_CLASSIFIER
             Prefs.DEFAULT_JUDGE_BASE_OPENROUTER -> Prefs.PROVIDER_OPENROUTER
             Prefs.DEFAULT_JUDGE_BASE_TYPESAFE -> Prefs.PROVIDER_TYPESAFE
             else -> providerOf(idx)
@@ -415,18 +427,23 @@ class SettingsActivity : AppCompatActivity() {
 
     /** The full endpoint a preset host would have been expanded to. */
     private fun expandJudgeUrl(base: String): String = when (base.trim().trimEnd('/')) {
+        Prefs.DEFAULT_JUDGE_BASE_CLASSIFIER -> Prefs.DEFAULT_JUDGE_BASE_CLASSIFIER + "/v1/systemone"
         Prefs.DEFAULT_JUDGE_BASE_OPENROUTER -> Prefs.DEFAULT_JUDGE_BASE_OPENROUTER + "/alpha/decisions"
         Prefs.DEFAULT_JUDGE_BASE_TYPESAFE -> Prefs.DEFAULT_JUDGE_BASE_TYPESAFE + "/v1/systemone"
         else -> base.trim()
     }
 
-    private fun defaultJudgeBase(provider: String): String =
-        if (provider == Prefs.PROVIDER_TYPESAFE) Prefs.DEFAULT_JUDGE_BASE_TYPESAFE
-        else Prefs.DEFAULT_JUDGE_BASE_OPENROUTER
+    private fun defaultJudgeBase(provider: String): String = when (provider) {
+        Prefs.PROVIDER_CLASSIFIER -> Prefs.DEFAULT_JUDGE_BASE_CLASSIFIER
+        Prefs.PROVIDER_TYPESAFE -> Prefs.DEFAULT_JUDGE_BASE_TYPESAFE
+        else -> Prefs.DEFAULT_JUDGE_BASE_OPENROUTER
+    }
 
-    private fun defaultJudgeModel(provider: String): String =
-        if (provider == Prefs.PROVIDER_TYPESAFE) Prefs.DEFAULT_JUDGE_MODEL_TYPESAFE
-        else Prefs.DEFAULT_JUDGE_MODEL_OPENROUTER
+    private fun defaultJudgeModel(provider: String): String = when (provider) {
+        Prefs.PROVIDER_CLASSIFIER -> Prefs.DEFAULT_JUDGE_MODEL_CLASSIFIER
+        Prefs.PROVIDER_TYPESAFE -> Prefs.DEFAULT_JUDGE_MODEL_TYPESAFE
+        else -> Prefs.DEFAULT_JUDGE_MODEL_OPENROUTER
+    }
 
     /**
      * A throwaway [Prefs] view carrying exactly what is in the boxes right now,
