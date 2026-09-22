@@ -196,9 +196,7 @@ class Prefs(context: Context, prefsName: String = PREFS_MAIN) {
     }
 
     /** Reply route key, falling back to the judge key. */
-    fun effectiveReplyKey(): String = replyKey.ifBlank {
-        if (judgeProvider != PROVIDER_CLASSIFIER) judgeKey else ""
-    }
+    fun effectiveReplyKey(): String = replyKey.ifBlank { judgeKey }
 
     /** Vision route key, falling back to reply then judge. */
     fun effectiveVisionKey(): String = visionKey.ifBlank { effectiveReplyKey() }

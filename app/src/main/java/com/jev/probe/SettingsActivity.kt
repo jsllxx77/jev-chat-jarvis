@@ -124,8 +124,7 @@ class SettingsActivity : AppCompatActivity() {
             }
             judgeResult.text = "测试中…"
             // Provider follows the address when it is still a known preset host,
-            // so a stale pill selection cannot send a TypeSafe path to OpenRouter.
-            val provider = resolveJudgeProvider(judgeProviderIdx, base)
+            // so a stale pill selection cannot send a SystemOne path to OpenRouter.
             if (provider == Prefs.PROVIDER_CUSTOM && base.isBlank()) {
                 judgeResult.text = "自定义档要填完整 URL（带路径）"; return@cardBtn
             }
